@@ -12,7 +12,7 @@ import (
 )
 
 const _SESSION_ID_LENGTH = 32
-const _SESSION_COOKIE_NAME_DEFAULT = "gosession"
+const _SESSION_COOKIE_NAME_DEFAULT = "session"
 
 type Manager struct {
 	cookieName  string     //private cookie name
@@ -40,6 +40,8 @@ func NewManager(provider Provider, cookieName string, maxLifeTime int64, secure 
 	if len(cookieName) <= 0 {
 		cookieName = _SESSION_COOKIE_NAME_DEFAULT
 	}
+	log.Printf("Creating new Session Manager - cookieName: %s, maxLifeTime: %d, secure: %v",
+		cookieName, maxLifeTime, secure)
 	manager := &Manager{
 		provider: provider,
 		cookieName: cookieName,
@@ -62,9 +64,23 @@ func (manager *Manager) Start(w http.ResponseWriter, r *http.Request) (session S
 			Value: url.QueryEscape(sid),
 			Path: "/", HttpOnly: true,
 			MaxAge: int(manager.maxLifeTime),
-			Secure:manager.secure,
+			Secure: manager.secure,
+			Domain: r.URL.Host,
 		}
 		http.SetCookie(w, &cookie)
+	} else {
+		sid, _ := url.QueryUnescape(cookie.Value)
+		session, _ = manager.provider.SessionRead(sid)
+	}
+	return
+}
+
+func (manager *Manager) Get(r *http.Request) (session Session) {
+	manager.lock.Lock()
+	defer manager.lock.Unlock()
+	cookie, err := r.Cookie(manager.cookieName)
+	if err != nil || cookie.Value == "" {
+		return nil
 	} else {
 		sid, _ := url.QueryUnescape(cookie.Value)
 		session, _ = manager.provider.SessionRead(sid)
@@ -82,7 +98,12 @@ func (manager *Manager) Destroy(w http.ResponseWriter, r *http.Request){
 		defer manager.lock.Unlock()
 		manager.provider.SessionDestroy(cookie.Value)
 		expiration := time.Now()
-		cookie := http.Cookie{Name: manager.cookieName, Path: "/", HttpOnly: true, Expires: expiration, MaxAge: -1}
+		cookie := http.Cookie{
+			Name: manager.cookieName,
+			Path: "/",
+			HttpOnly: true,
+			Expires: expiration,
+			MaxAge: -1}
 		http.SetCookie(w, &cookie)
 	}
 }

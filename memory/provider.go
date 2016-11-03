@@ -1,6 +1,6 @@
 package memory
 import (
-	"sv/sessions"
+	"github.com/mmitevski/sessions"
 	"sync"
 	"container/list"
 	"time"
