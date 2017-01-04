@@ -1,4 +1,5 @@
 package sessions
+
 import (
 	"sync"
 	"net/http"
@@ -89,7 +90,7 @@ func (manager *Manager) Get(r *http.Request) (session Session) {
 }
 
 //Destroy session
-func (manager *Manager) Destroy(w http.ResponseWriter, r *http.Request){
+func (manager *Manager) Destroy(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(manager.cookieName)
 	if err != nil || cookie.Value == "" {
 		return
@@ -123,7 +124,7 @@ func (manager *Manager) init() {
 		for {
 			log.Println("Checking sessions...")
 			select {
-			case <- manager.closed:
+			case <-manager.closed:
 				log.Println("Stop monitoring sessions...")
 				return
 			default:

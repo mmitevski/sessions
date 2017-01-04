@@ -1,12 +1,10 @@
 package sessions
 
 type Session interface {
+	Set(key string, value interface{}) error //set session value
 
-	Set(key, value interface{}) error //set session value
+	Get(key string) interface{}  //get session value
 
-	Get(key interface{}) interface{}  //get session value
-
-	Delete(key interface{}) error     //delete session value
-
+	Delete(key string) error     //delete session value
 }
 

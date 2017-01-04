@@ -1,7 +1,6 @@
 package sessions
 
 type Provider interface {
-
 	// implements the initialization of a session, and returns new a session if it succeeds.
 	SessionInit(sid string) (Session, error)
 
@@ -14,5 +13,4 @@ type Provider interface {
 
 	// deletes expired session variables according to maxLifeTime.
 	DestroyOutdatedSessions(maxLifeTime int64)
-
 }

@@ -1,50 +1,46 @@
 package memory
+
 import (
-	"github.com/mmitevski/sessions"
 	"sync"
-	"container/list"
 	"time"
+	"github.com/mmitevski/sessions"
+	"log"
 )
 
-
 type provider struct {
-	lock     sync.Mutex               // lock
-	sessions map[string]*list.Element // save in memory
-	list     *list.List               // gc
+	lock     sync.Mutex          // lock
+	sessions map[string]*session // save in memory
 }
 
 func (p *provider) SessionInit(sid string) (sessions.Session, error) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	v := make(map[interface{}]interface{}, 0)
 	s := &session{
 		id: sid,
 		timeAccessed: time.Now(),
-		values: v,
+		started: time.Now(),
+		values: make(map[string]interface{}, 0),
 		provider:p,
 	}
-	element := p.list.PushBack(s)
-	p.sessions[sid] = element
+	p.sessions[sid] = s
+	log.Printf("Started session %s.", sid)
 	return s, nil
 }
 
 func (p *provider) SessionRead(sid string) (sessions.Session, error) {
-	if element, ok := p.sessions[sid]; ok {
-		return element.Value.(*session), nil
+	if session, ok := p.sessions[sid]; ok {
+		return session, nil
 	} else {
-		sess, err := p.SessionInit(sid)
-		return sess, err
+		return p.SessionInit(sid)
 	}
-	return nil, nil
 }
 
 func (p *provider) SessionDestroy(sid string) error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	if element, ok := p.sessions[sid]; ok {
+	if session, ok := p.sessions[sid]; ok {
 		delete(p.sessions, sid)
-		p.list.Remove(element)
-		element.Value.(*session).provider = nil
+		session.provider = nil
 	}
 	return nil
 }
@@ -52,10 +48,12 @@ func (p *provider) SessionDestroy(sid string) error {
 func (p *provider) DestroyOutdatedSessions(maxLifeTime int64) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	for element := p.list.Front(); element != nil; element = element.Next() {
-		if (element.Value.(*session).timeAccessed.Unix() + maxLifeTime) < time.Now().Unix() {
-			p.list.Remove(element)
-			delete(p.sessions, element.Value.(*session).id)
+	now := time.Now().Unix() - maxLifeTime
+	for sid, session := range p.sessions {
+		if session.timeAccessed.Unix() < now {
+			delete(p.sessions, sid)
+			session.provider = nil
+			log.Printf("Deleted session %s started %v.", sid, session.started)
 		}
 	}
 }
@@ -63,18 +61,15 @@ func (p *provider) DestroyOutdatedSessions(maxLifeTime int64) {
 func (p *provider) SessionUpdate(sid string) error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	if element, ok := p.sessions[sid]; ok {
-		element.Value.(*session).timeAccessed = time.Now()
-		p.list.MoveToFront(element)
-		return nil
+	if session, ok := p.sessions[sid]; ok {
+		session.timeAccessed = time.Now()
 	}
 	return nil
 }
 
 func New() sessions.Provider {
 	p := &provider{
-		sessions: make(map[string]*list.Element, 0),
-		list: list.New(),
+		sessions: make(map[string]*session, 0),
 	}
 	return p
 }
