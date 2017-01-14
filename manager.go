@@ -1,15 +1,15 @@
 package sessions
 
 import (
-	"sync"
-	"net/http"
-	"net/url"
 	"crypto/rand"
 	"encoding/base64"
-	"time"
-	"log"
-	"strings"
 	"errors"
+	"log"
+	"net/http"
+	"net/url"
+	"strings"
+	"sync"
+	"time"
 )
 
 const _SESSION_ID_LENGTH = 32
@@ -44,10 +44,10 @@ func NewManager(provider Provider, cookieName string, maxLifeTime int64, secure 
 	log.Printf("Creating new Session Manager - cookieName: %s, maxLifeTime: %d, secure: %v",
 		cookieName, maxLifeTime, secure)
 	manager := &Manager{
-		provider: provider,
-		cookieName: cookieName,
+		provider:    provider,
+		cookieName:  cookieName,
 		maxLifeTime: maxLifeTime,
-		secure: secure,
+		secure:      secure,
 	}
 	defer manager.init()
 	return manager, nil
@@ -61,9 +61,9 @@ func (manager *Manager) Start(w http.ResponseWriter, r *http.Request) (session S
 		sid := manager.sessionId()
 		session, _ = manager.provider.SessionInit(sid)
 		cookie := http.Cookie{
-			Name: manager.cookieName,
+			Name:  manager.cookieName,
 			Value: url.QueryEscape(sid),
-			Path: "/", HttpOnly: true,
+			Path:  "/", HttpOnly: true,
 			MaxAge: int(manager.maxLifeTime),
 			Secure: manager.secure,
 			Domain: r.URL.Host,
@@ -100,11 +100,11 @@ func (manager *Manager) Destroy(w http.ResponseWriter, r *http.Request) {
 		manager.provider.SessionDestroy(cookie.Value)
 		expiration := time.Now()
 		cookie := http.Cookie{
-			Name: manager.cookieName,
-			Path: "/",
+			Name:     manager.cookieName,
+			Path:     "/",
 			HttpOnly: true,
-			Expires: expiration,
-			MaxAge: -1}
+			Expires:  expiration,
+			MaxAge:   -1}
 		http.SetCookie(w, &cookie)
 	}
 }

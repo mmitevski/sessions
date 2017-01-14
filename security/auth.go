@@ -1,4 +1,5 @@
 package security
+
 import "strings"
 
 type Authentication interface {

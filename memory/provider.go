@@ -1,10 +1,10 @@
 package memory
 
 import (
-	"sync"
-	"time"
 	"github.com/mmitevski/sessions"
 	"log"
+	"sync"
+	"time"
 )
 
 type provider struct {
@@ -16,11 +16,11 @@ func (p *provider) SessionInit(sid string) (sessions.Session, error) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	s := &session{
-		id: sid,
+		id:           sid,
 		timeAccessed: time.Now(),
-		started: time.Now(),
-		values: make(map[string]interface{}, 0),
-		provider:p,
+		started:      time.Now(),
+		values:       make(map[string]interface{}, 0),
+		provider:     p,
 	}
 	p.sessions[sid] = s
 	log.Printf("Started session %s.", sid)
