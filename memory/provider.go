@@ -53,7 +53,8 @@ func (p *provider) DestroyOutdatedSessions(maxLifeTime int64) {
 		if session.timeAccessed.Unix() < now {
 			delete(p.sessions, sid)
 			session.provider = nil
-			log.Printf("Deleted session %s started %v.", sid, session.started)
+			log.Printf("Deleted session %s started %v, last accessed %v.",
+				sid, session.started, session.timeAccessed)
 		}
 	}
 }
